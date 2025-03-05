@@ -1,0 +1,14 @@
+#!/bin/bash
+
+
+cd ..
+docker build -t missionsystems/detr-devel-amd64:latest -f docker/amd.Dockerfile .
+docker build -t missionsystems/hyperteaming:detection -f docker/strip_secrets.Dockerfile .
+./docker/build_model_vulcan_3class
+
+# docker build -t missionsystems/detr-devel-arm64:latest -f arm.Dockerfile .
+
+
+# multistage build to remove source code, lisence files etc. 
+
+# update minifest, push to dockerhub

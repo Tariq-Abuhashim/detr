@@ -1,0 +1,25 @@
+
+
+How to process IR images? (no fine tuning here, hence "resume" option is not used)
+
+$ ssh h8
+$ conda activate nauss
+$ cd nauss
+
+(1) extract.py to extract frames from the videos. I took every 5th frame. So the complete data was 6000+ images, but I only used 1300+ for training, and validation.
+(2) ir_to_rgb.py to convert IR images from 1-channel to 3-channel images.
+(3) VGG annotator to generate annotation file: https://www.robots.ox.ac.uk/~vgg/software/via
+(4) fix_annotation_file.py to clean up the annotation file and put it in the right format, to match COCO annotations.
+(5) split_images.py to split the data into train data 80% (1000+ images), validation data 15% (190+ images), test data (190+ images). Those were only 20% of the images in the video.
+(6) check_coco.py to verify the annotations and the image splits.
+(7) modified the transformer code to allow fine tuning and take 4 classes (knife, rifle, pistol, unknown). 
+    This requires modifying the prediction head to generate the required number of classes and ignore extra weights by the pre-trained COCO checkpoint. 
+    The code is simple, the model takes only a few lines to write and modify. The only challenging bits are attention mechanisms, backbone features, and prediction heads. 
+    However, there are many available resources to use.
+
+$ cd nauss/detr/
+$ python main.py --dataset_file your_dataset --coco_path ../man_rgb/ --lr=1e-4  --batch_size=4 --num_workers=8  --output_dir="outputs" --epochs=200 --backbone="resnet101" --resume="../detr_checkpoint.pth"
+$ python main.py --dataset_file your_dataset --coco_path ../man_ir_to_rgb/ --lr=1e-4  --batch_size=4 --num_workers=8  --output_dir="outputs" --epochs=200 --backbone="resnet101" 
+
+(8) ran the training loop with validation in it, to adjust the hyperparameters after each epoch
+(9) detect.py to run the model on the whole video (containing all the 6000+ images) and to generate the annotated videos attached.

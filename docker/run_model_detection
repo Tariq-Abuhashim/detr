@@ -1,0 +1,23 @@
+#!/usr/bin/bash
+
+#image=missionsystems/detr-devel-amd64
+image=missionsystems/hyperteaming:detection
+name=detr_model_runtime
+docker run -it -d --gpus all --privileged \
+	-e NVIDIA_DRIVER_CAPABILITIES=graphics,compute,utility,display \
+	--name $name \
+	--user devops \
+	-v $HOME/src/hyperteaming/detr:/home/devops/src/hyperteaming/detr \
+	$image tail -f /dev/null 
+
+function cleanup() {
+docker stop $name
+docker rm $name
+}
+
+
+trap cleanup EXIT
+
+docker exec -i --user devops $name /bin/bash -c "source /opt/ros/humble/setup.bash && export ROS_DOMAIN_ID=0 && cd /home/devops/src/hyperteaming/detr && ./run_detection.sh"
+
+

@@ -1,0 +1,17 @@
+#!/usr/bin/bash
+
+#image=missionsystems/detr-devel-amd64
+image=missionsystems/hyperteaming:detection
+name=detr_model_runtime
+docker run -it -d --gpus all --privileged \
+	-e NVIDIA_DRIVER_CAPABILITIES=graphics,compute,utility,display \
+	--name $name \
+	--user devops \
+	-v $HOME/src/hyperteaming/detr:/home/devops/src/hyperteaming/detr \
+	$image tail -f /dev/null 
+
+docker exec $name /bin/bash -c "mkdir -p /home/devops/src/hyperteaming/detr/build"
+docker exec $name /bin/bash -c "cd /home/devops/src/hyperteaming/detr/build; cmake .. && make -j" 
+
+docker stop $name
+docker rm $name

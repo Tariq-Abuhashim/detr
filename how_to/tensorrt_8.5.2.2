@@ -1,0 +1,43 @@
+sudo apt install python3-libnvinfer
+
+***********
+
+dv@ubuntu:~$ sudo apt install tensorrt
+Reading package lists... Done
+Building dependency tree       
+Reading state information... Done
+tensorrt is already the newest version (8.5.2.2-1+cuda11.4).
+The following packages were automatically installed and are no longer required:
+  python3-cached-property python3-dockerpty python3-docopt python3-jsonschema
+  python3-pyrsistent python3-texttable ubuntu-fan
+Use 'sudo apt autoremove' to remove them.
+0 upgraded, 0 newly installed, 0 to remove and 114 not upgraded.
+
+***********
+
+dv@ubuntu:~$ pip3 install tensorrt
+Requirement already satisfied: tensorrt in /usr/lib/python3.8/dist-packages (8.5.2.2)
+
+***********
+
+dv@ubuntu:~$ pip3 show tensorrt
+Name: tensorrt
+Version: 8.5.2.2
+Summary: A high performance deep learning inference library
+Home-page: https://developer.nvidia.com/tensorrt
+Author: NVIDIA Corporation
+Author-email: None
+License: Proprietary
+Location: /usr/lib/python3.8/dist-packages
+Requires: 
+Required-by:
+
+***********
+
+import pip
+print(pip.__version__)
+23.3.1
+import tensorrt as trt
+TRT_LOGGER = trt.Logger(trt.Logger.WARNING)
+print("TensorRT Version:", trt.__version__)
+TensorRT Version: 8.5.2.2

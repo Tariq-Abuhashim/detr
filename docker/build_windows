@@ -1,0 +1,3 @@
+#!/bin/bash
+
+docker build -t missionsystems/hyperteaming:windows  -f  lines.Dockerfile .

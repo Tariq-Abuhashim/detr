@@ -1,0 +1,3 @@
+conda activate detr
+python build_onnx.py
+trtexec --onnx=detr.onnx --saveEngine=detr.trt

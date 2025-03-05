@@ -1,0 +1,95 @@
+
+
+(1) Get pretrained weights:
+	$ wget https://dl.fbaipublicfiles.com/detr/detr-r50-e632da11.pth
+
+(2) Remove class (prediction head) weights
+
+	python
+	>>> import torch
+	>>> checkpoint = torch.load("detr-r50-e632da11.pth", map_location='cpu')
+	>>> del checkpoint["model"]["class_embed.weight"]
+	>>> del checkpoint["model"]["class_embed.bias"]
+	>>> torch.save(checkpoint,"detr-r50_no-class-head.pth")
+
+(3) When fine-tuning a model that has been pre-trained on a different number of classes, 
+    the usual approach is to load the weights for all layers that match and initialize 
+    the layers that don't match (e.g., the prediction head) from scratch.
+
+	Make sure to set non-strict weight loading in main.py :
+
+    line 178
+	model_without_ddp.load_state_dict(checkpoint['model'], strict=False) # Load the weights, but skip the mismatching layers
+
+    # The class prediction head will be left uninitialized.
+    # By default, PyTorch layers like nn.Linear are initialized with Kaiming Uniform. 
+    # If you want some other initialization, you can apply it explicitly:
+    # for example, to initialize with zeros:
+    # nn.init.zeros_(model.class_embed.weight)
+    # nn.init.zeros_(model.class_embed.bias)
+
+(4) Your dataset should ideally be in the COCO-format. 
+	Make your own data-builder (alternatively rename your train/valid/annotation file to match the COCO Dataset) 
+	In datasets.coco.py add :
+
+	def build_your_dataset(image_set, args):
+		root = Path(args.coco_path)
+		assert root.exists(), f'provided COCO path {root} does not exist'
+		mode = 'instances'
+		PATHS = {
+		    "train": (root / "train", root / "annotations" / f'instances_train.json'),
+		    "val": (root / "valid", root / "annotations" / f'instance_valid.json'),
+		}
+		img_folder, ann_file = PATHS[image_set]
+		dataset = CocoDetection(img_folder, ann_file, transforms=make_coco_transforms(image_set), return_masks=args.masks)
+		return dataset
+
+(4) In datasets.__init__.py add your builder as an option:
+ 
+    from .coco import build_your_dataset
+
+	def build_dataset(image_set, args):
+		if args.dataset_file == 'coco':
+		    return build_coco(image_set, args)
+		if args.dataset_file == 'custom_dataset':
+		    return build_your_dataset(image_set, args)
+		[...]
+
+(5) define how many classes (number of prediction head classes) you have in models.detr.py
+
+	def build(args):
+		[...]
+		if args.dataset_file == 'your_dataset': num_classes = 4    # knife, rifle, pistol, unknown
+		[...]
+
+(6) Run your model (example): 
+	
+	$ python main.py --dataset_file your_dataset --coco_path ../man_rgb  --epochs 50 --lr=1e-4  --batch_size=2 --num_workers=4  --output_dir="outputs" --resume="../detr-r50_no-class-head.pth"
+
+
+
+NOTE:
+
+When you fine-tune a DETR model that was pre-trained on the COCO dataset, it depends on your use case and the data you have:
+
+    New Categories are a Subset of COCO Categories:
+        If you are only interested in a subset of the COCO categories, you can keep the category_ids consistent with the COCO dataset. 
+		This makes it easier since the pre-trained weights for those categories can be directly leveraged.
+        You can just ignore or zero-out the outputs for the categories you are not interested in.
+
+    New Categories not in COCO:
+        If you have entirely new categories that aren't in the COCO dataset, then you'll need to adjust the output dimension 
+			of the class prediction head in DETR to match the number of categories in your new dataset.
+        The category_ids in your annotations can be defined anew; they don't have to match COCO's category_ids.
+        When loading the pre-trained weights, be careful to exclude or adjust the class prediction layer since its dimensions might not match. 
+			PyTorch will give an error if you try to load weights where dimensions don't match.
+
+    Combining COCO Categories with New Categories:
+        If you are adding additional categories to the existing COCO categories, you'll again need to adjust the output dimension of the class prediction head.
+        In this case, you can append new category_ids after the COCO IDs. For instance, if COCO has categories 1 to 80, your new categories can start from 81 onwards.
+        When fine-tuning, you'd again need to handle the class prediction layer's weights carefully.
+
+    General Point on Fine-tuning:
+        Remember, if you're fine-tuning on a smaller dataset or on significantly different data, be cautious with the learning rate and other hyperparameters to avoid overfitting or forgetting the pre-trained knowledge.
+
+In summary, when fine-tuning DETR on a different dataset, you're not strictly bound to use the same category_ids as COCO, but how you adjust them will depend on the relationship between your dataset and the COCO categories.

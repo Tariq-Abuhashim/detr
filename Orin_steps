@@ -1,0 +1,78 @@
+# system
+sudo apt update
+sudo apt upgrade
+sudo apt install build-essential cmake git pkg-config libgtk-3-dev \
+                 libavcodec-dev libavformat-dev libswscale-dev \
+                 libv4l-dev libxvidcore-dev libx264-dev \
+                 libjpeg-dev libpng-dev libtiff-dev \
+                 gfortran openexr libatlas-base-dev \
+                 python3-dev python3-numpy libtbb2 libtbb-dev \
+                 libdc1394-22-dev
+
+
+# pip and numpy
+sudo apt install python3-pip
+sudo apt update
+sudo apt upgrade -y
+sudo pip3 install numpy
+
+# cuda 11-4
+sudo apt install cuda
+echo 'export PATH=/usr/local/cuda/bin${PATH:+:${PATH}}' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}' >> ~/.bashrc
+source ~/.bashrc
+
+# tensorrt
+sudo apt install tensorrt
+sudo apt install python3-libnvinfer-dev
+echo 'export PATH=/usr/src/tensorrt/bin:$PATH' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH=/usr/src/tensorrt/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
+source ~/.bashrc
+
+# pycuda
+pip install pycuda
+
+# opencv
+sudo apt install libopencv-dev python3-opencv
+sudo pip3 install opencv-python
+sudo pip3 install opencv-python-headless  # Optional, for headless environments
+
+# system
+mkdir ~/src
+
+# torch (ninja not found could be a user problem)
+# note: if you run setup and get some user access issues, or something not found
+#       when switching user you have to run 'python3 setup.py clean'
+sudo pip3 install testresources astunparse numpy ninja pyyaml setuptools cmake typing_extensions future six requests dataclasses
+sudo apt-get install ninja-build
+cd ~/src
+git clone --recursive -b v1.11.0 https://github.com/pytorch/pytorch
+cd pytorch
+git submodule sync && git submodule update --init --recursive
+#echo 'export PATH=$PATH:~/.local/bin' >> ~/.bashrc
+#source ~/.bashrc
+sudo CMAKE_CUDA_ARCHITECTURES="75" CUDACXX=/usr/local/cuda/bin/nvcc python3 setup.py install
+#echo 'export PYTHONPATH=/usr/lib/python3.8/site-packages:$PYTHONPATH' >> ~/.bashrc
+#source ~/.bashrc
+
+# vision
+# note: if you run setup and get some user access issues, or something not found
+#       when switching user you have to run 'python3 setup.py clean'
+cd ~/src
+git clone -b v0.12.0 https://github.com/pytorch/vision.git
+cd vision
+sudo TORCH_CUDA_ARCH_LIST="7.5" python3 setup.py install
+# NX may have issue with using mmfpeg
+#sudo TORCH_CUDA_ARCH_LIST="7.5" TORCHVISION_USE_FFMPEG="0" python3 setup.py install
+
+# detr
+cd ~/src
+git clone git@gitlab.com:missionsystems/hyperteaming/detr.git
+cd detr
+./check_componants.sh
+sudo pip3 install cython scipy
+sudo pip3 install --upgrade numpy scipy
+sudo pip3 install -U 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
+#(optional) to work with panoptic install panopticapi:
+sudo pip3 install git+https://github.com/cocodataset/panopticapi.git
+

@@ -1,0 +1,44 @@
+
+To debug/compile pytorch in the docker file:
+
+Run the docker container (prompt will be at .../pytorch/):
+
+$ docker run \
+    -it \
+    --gpus all \
+    -e DISPLAY=$DISPLAY \
+    -e NVIDIA_DRIVER_CAPABILITIES=graphics,compute,utility,display \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
+    missionsystems/detr-devel-amd64 "bash"
+
+Then run:
+
+sudo python3 -m pip install astunparse numpy ninja pyyaml mkl mkl-include setuptools cmake cffi typing_extensions future six requests dataclasses
+sudo CMAKE_CUDA_ARCHITECTURES="75" python3 setup.py install
+
+
+
+Error:
+
+CMake Error: Error: generator : Ninja
+Does not match the generator used previously: Unix Makefiles
+Either remove the CMakeCache.txt file and CMakeFiles directory or choose a different binary directory.
+
+Solution:
+
+cd /home/devops/src/pytorch/build
+rm -rf CMakeCache.txt CMakeFiles
+cmake -GNinja \
+      -DBUILD_PYTHON=True \
+      -DBUILD_TEST=True \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_CUDA_ARCHITECTURES=75 \
+      -DCMAKE_INSTALL_PREFIX=/home/devops/src/pytorch/torch \
+      -DCMAKE_PREFIX_PATH=/usr/lib/python3.8/site-packages \
+      -DNUMPY_INCLUDE_DIR=/usr/lib/python3/dist-packages/numpy/core/include \
+      -DPYTHON_EXECUTABLE=/usr/bin/python3 \
+      -DPYTHON_INCLUDE_DIR=/usr/include/python3.8 \
+      -DPYTHON_LIBRARY=/usr/lib/libpython3.8.so.1.0 \
+      -DTORCH_BUILD_VERSION=1.11.0a0+gitbc2c6ed \
+      -DUSE_NUMPY=True \
+      /home/devops/src/pytorch

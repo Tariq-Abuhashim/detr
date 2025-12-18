@@ -42,7 +42,7 @@ class TensorRTInference:
             self.inputs, self.outputs, self.bindings, self.stream = self.allocate_buffers_trt10()
 
         self.transform = T.Compose([
-            T.Resize(800),
+            T.Resize(720),
             T.ToTensor(),
             T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
@@ -190,7 +190,9 @@ class TensorRTInference:
         [cuda.memcpy_dtoh_async(out['host'], out['device'], self.stream) for out in self.outputs]
         self.stream.synchronize()
         
-        # Postprocessing : Assuming output[0] is pred_logits and output[1] is pred_boxes
+        # Postprocessing : reshape outputs, assuming output[0] is pred_logits and output[1] is pred_boxes
+        # output_0 → logits (100 × (#classes+2))
+		# output_1 → boxes  (100 × 4)
         start_time = time.time()
         pred_logits = np.asarray(self.outputs[0]['host']).reshape(100, 2+self.num_classes) #(#queries x #CLASSES)  3-if only windows, 5-if car,person, window
         pred_boxes = np.asarray(self.outputs[1]['host']).reshape(100, 4)  #(#queries x 4corners)
@@ -219,8 +221,8 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Predict and recreate images with missing red channel.')
-    parser.add_argument('--engine', type=str, default='model.engine', help='Directory containing images with missing red channel')
-    parser.add_argument('--image', type=str, default='../samples/20230210T081213.646665.png', help='Path to the trained model file')
+    parser.add_argument('--engine', type=str, default='/home/mrt/dev/window-tracker/deepstream-app/build/detr.engine', help='Directory containing images with missing red channel')
+    parser.add_argument('--image', type=str, default='../samples/1719546531791042.png', help='Path to the trained model file')
     parser.add_argument('--num_classes', type=int, default=1, help='Number of classes')
     args = parser.parse_args()
     main(args)

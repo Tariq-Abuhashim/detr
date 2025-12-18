@@ -180,9 +180,11 @@ class SetCriterion(nn.Module):
         # upsample predictions to the target size
         src_masks = interpolate(src_masks[:, None], size=target_masks.shape[-2:],
                                 mode="bilinear", align_corners=False)
+
         src_masks = src_masks[:, 0].flatten(1)
 
         target_masks = target_masks.flatten(1)
+
         target_masks = target_masks.view(src_masks.shape)
         losses = {
             "loss_mask": sigmoid_focal_loss(src_masks, target_masks, num_boxes),
